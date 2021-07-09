@@ -22,42 +22,33 @@ def calculate_days_since(day):
     return day_diff
 
 
-def get_uuid(self, symbol):
-    url = f"{COIN_RANK_URL}/coins?symbols[]={symbol}"
-    response = requests.get(url, headers=GET_HEADERS)
-    status_code = response.status_code
-    if status_code == 200:
-        try:
-            uuid = response.json()['data']['coins'][0]['uuid']
-            name = response.json()['data']['coins'][0]['name']
-            return uuid, name
-        except IndexError:
-            raise IndexError(f"No Crypto Coin Exists with '{c_symbol}' Symbol") from None
-    else:
-        print(f"Error in API Call: {status_code} - {response.text}")
-        raise IndexError
-
-
 def clean_user_input(string):
     string = string.strip()
     string = string.lower()
     return string
 
 
-def crypt_get_uuid(symbol):
-    url = f"{COIN_RANK_URL}/coins?symbols[]={symbol}"
-    response = requests.get(url, headers=GET_HEADERS)
-    status_code = response.status_code
-    if status_code == 200:
-        try:
-            uuid = response.json()['data']['coins'][0]['uuid']
-            name = response.json()['data']['coins'][0]['name']
-            return uuid, name
-        except IndexError:
-            raise IndexError(f"No Crypto Coin Exists with '{c_symbol}' Symbol") from None
-    else:
-        print(f"Error in API Call: {status_code} - {response.text}")
-        raise IndexError
+class CryptoData(object):
+    def __init__(self):
+        self.return_data = None
+        self.crypto_uuid = None
+        self.crypto_name = None
+
+    def get_uuid(self, symbol):
+        url = f"{COIN_RANK_URL}/coins?symbols[]={symbol}"
+        response = requests.get(url, headers=GET_HEADERS)
+        status_code = response.status_code
+        if status_code == 200:
+            try:
+                uuid = response.json()['data']['coins'][0]['uuid']
+                name = response.json()['data']['coins'][0]['name']
+                self.crypto_uuid = uuid
+                self.crypto_name = name
+            except IndexError:
+                raise IndexError(f"No Crypto Coin Exists with '{c_symbol}' Symbol") from None
+        else:
+            print(f"Error in API Call: {status_code} - {response.text}")
+            raise IndexError
 
 
 def get_raw_data(uuid, api_headers):
@@ -109,11 +100,12 @@ if __name__ == "__main__":
 
         # Crypto Branch
         if branch_input == 'crypto':
+            crypto = CryptoData()
             c_symbol = str(input("Please Enter Crypto (Symbol):"))
             # Clean the User Input
             c_symbol = clean_user_input(c_symbol)
             # Get the Crypto UUID from the Symbol
-            c_uuid, c_name = crypt_get_uuid(c_symbol)
+            c_uuid, c_name = crypto.get_uuid(c_symbol)
             # Get Raw Data from API
             print(f"Getting Data For: {c_name}")
             c_raw_data = get_raw_data(c_uuid, GET_HEADERS)
