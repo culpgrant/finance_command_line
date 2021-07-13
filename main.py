@@ -1,6 +1,5 @@
 import os
 import sys
-import datetime
 import time
 import pprint
 import requests
@@ -13,12 +12,6 @@ def current_unix_time():
     return int(round(time.time()))
 
 
-def yesterday_date():
-    today = datetime.date.today()
-    yesterday = today - datetime.timedelta(days=1)
-    return yesterday
-
-
 def calculate_days_since(day):
     clean_day = int(day)
     current_day = int(round(time.time()))
@@ -26,9 +19,15 @@ def calculate_days_since(day):
     return day_diff
 
 
-def clean_user_input(string):
+def clean_lower_user_input(string):
     string = string.strip()
     string = string.lower()
+    return string
+
+
+def clean_upper_user_input(string):
+    string = string.strip()
+    string = string.upper()
     return string
 
 
@@ -99,13 +98,35 @@ class CryptoData:
 
 class PolyFinData:
     def __init__(self):
-        self.api_url = "https://api.polygon.io/v1/open-close/"
+        self.api_url = "https://api.polygon.io/v2/aggs/ticker/"
         self.api_key = os.environ['polygon_api']
-        self.raw_data = None
-        self.clean_data = None
+        self.returned_data = None
+        self.parsed_data = None
 
-    def call_api(self, symb, yes_date):
-        fin_api_url = f"{self.api_url}{symb}/{yes_date}?adjusted=true&apiKey={self.api_key}"
+    def call_api(self, symb):
+        fin_api_url = f"{self.api_url}{symb}/prev?adjusted=true&apiKey={self.api_key}"
+        response = requests.get(fin_api_url)
+        self.returned_data = response.json()
+
+    def parse_response(self, symb):
+        try:
+            self.parsed_data = self.returned_data['results'][0]
+        except KeyError:
+            self.parsed_data = {}
+            print(f"No Results from the API - Check the '{symb}' Ticker")
+
+    def clean_data(self):
+        try:
+            self.parsed_data['Ticker'] = self.parsed_data.pop('T')
+            self.parsed_data['Volume'] = self.parsed_data.pop('v')
+            self.parsed_data['Weighted_Vol'] = self.parsed_data.pop('vw')
+            self.parsed_data['Open'] = self.parsed_data.pop('o')
+            self.parsed_data['Close'] = self.parsed_data.pop('c')
+            self.parsed_data['High'] = self.parsed_data.pop('h')
+            self.parsed_data['Low'] = self.parsed_data.pop('l')
+            del self.parsed_data['n']
+        except KeyError:
+            self.parsed_data = {}
 
 
 if __name__ == "__main__":
@@ -114,14 +135,14 @@ if __name__ == "__main__":
     while 1:
         branch_input = str(input("Enter Crypto or Stock: "))
         # Clean the User Input
-        branch_input = clean_user_input(branch_input)
+        branch_input = clean_lower_user_input(branch_input)
 
         # Crypto Branch
         if branch_input == 'crypto':
             crypto = CryptoData()
             c_symbol = str(input("Please Enter Crypto (Symbol):"))
             # Clean the User Input
-            c_symbol = clean_user_input(c_symbol)
+            c_symbol = clean_lower_user_input(c_symbol)
             # Get the Crypto UUID from the Symbol
             crypto.get_uuid(c_symbol)
             c_uuid = crypto.crypto_uuid
@@ -133,7 +154,7 @@ if __name__ == "__main__":
                 print(f"Getting Data For: {c_name}")
                 crypto.get_raw_data()
                 c_raw_data = crypto.raw_data
-                # Clean Data from API
+                # Clean Data from APIa
                 crypto.parse_coin_data()
                 c_cleaned_data = crypto.clean_data
                 # Handling for the API not returning enough data
@@ -144,7 +165,18 @@ if __name__ == "__main__":
 
         # Stock Market Branch
         elif branch_input == 'stock':
-            print("Stock work done here")
+            stock = PolyFinData()
+            s_symbol = str(input("Please Enter Stock Symbol: "))
+            # Clean the user input
+            s_symbol = clean_upper_user_input(s_symbol)
+            # Get Data from the API
+            stock.call_api(s_symbol)
+            # Parse Data from API
+            stock.parse_response(s_symbol)
+            # Cleaned Data from API
+            stock.clean_data()
+            if len(stock.parsed_data) > 0:
+                print(f"Previous Close: {stock.parsed_data}")
 
         # Allows user to exit program
         elif branch_input == 'exit':
