@@ -9,6 +9,7 @@ class MainTestCase(unittest.TestCase):
         # Test the Day Calculator
         yesterday = int(round(time.time())) - 86400
         main_result = main.calculate_days_since(yesterday)
+        # This should always be a day ago
         self.assertEqual(main_result, 1, 'Error: day calculator')
 
     def test_clean_string_lower(self):
