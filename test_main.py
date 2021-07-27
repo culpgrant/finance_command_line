@@ -6,6 +6,7 @@ import main
 class MainTestCase(unittest.TestCase):
 
     def test_calc_days_passed(self):
+        # Test the Day Calculator
         yesterday = int(round(time.time())) - 86400
         main_result = main.calculate_days_since(yesterday)
         self.assertEqual(main_result, 1, 'Error: day calculator')
